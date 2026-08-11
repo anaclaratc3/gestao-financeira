@@ -8,12 +8,12 @@ const pool = new Pool({
 
 // Evento para confirmar a conexão bem-sucedida no log
 pool.on('connect', () => {
-  console.log('⚡ Conectado ao banco de dados PostgreSQL com sucesso!');
+  console.log('Conectado ao banco de dados PostgreSQL com sucesso!');
 });
 
 // Trata erros inesperados na conexão
 pool.on('error', (err) => {
-  console.error('❌ Erro inesperado no cliente do PostgreSQL:', err);
+  console.error('Erro inesperado no cliente do PostgreSQL:', err);
 });
 
 module.exports = {

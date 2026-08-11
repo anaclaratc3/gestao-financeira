@@ -4,6 +4,7 @@ require('dotenv').config();
 
 const categoriaRoutes = require('./routes/categoriaRoutes');
 const transacaoRoutes = require('./routes/transacaoRoutes');
+const usuarioRoutes = require('./routes/usuarioRoutes');
 
 const app = express();
 
@@ -14,6 +15,7 @@ app.use(express.json());
 // Rotas da API
 app.use('/api/categorias', categoriaRoutes);
 app.use('/api/transacoes', transacaoRoutes);
+app.use('/api/usuarios', usuarioRoutes);
 
 // Healthcheck
 app.get('/healthcheck', (req, res) => {

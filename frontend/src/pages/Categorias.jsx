@@ -26,17 +26,24 @@ export default function Categorias() {
     if (!nome.trim()) return;
 
     setLoading(true);
+
+    const usuarioSalvo = localStorage.getItem('usuario');
+    const usuario = usuarioSalvo ? JSON.parse(usuarioSalvo) : null;
+
     try {
       await api.post('/categorias', {
         nome: nome.trim(),
         limite_mensal: limite ? parseFloat(limite) : null,
+        usuario_id: usuario?.id,
+        tipo: 'DESPESA'
       });
 
       setNome('');
       setLimite('');
-      carregarCategorias();
+      await carregarCategorias();
     } catch (error) {
       console.error('Erro ao criar categoria:', error);
+      alert(error.response?.data?.erro || 'Erro ao salvar categoria.');
     } finally {
       setLoading(false);
     }
@@ -44,11 +51,14 @@ export default function Categorias() {
 
   const handleExcluirCategoria = async (id) => {
     if (!confirm('Tem certeza que deseja excluir esta categoria?')) return;
+    
     try {
       await api.delete(`/categorias/${id}`);
-      carregarCategorias();
+      await carregarCategorias();
     } catch (error) {
       console.error('Erro ao excluir categoria:', error);
+      const mensagemErro = error.response?.data?.erro || 'Erro ao excluir categoria.';
+      alert(mensagemErro);
     }
   };
 
@@ -67,7 +77,6 @@ export default function Categorias() {
         <form onSubmit={handleCriarCategoria} style={styles.formGrid}>
           <div style={{ flex: 1 }}>
             <label style={styles.label}>Nome da Categoria</label>
-
             <input
               type="text"
               placeholder="Ex: Alimentação, Moradia, Lazer..."
@@ -80,7 +89,6 @@ export default function Categorias() {
 
           <div style={{ flex: 1 }}>
             <label style={styles.label}>Teto de Gastos Mensal (Opcional)</label>
-
             <input
               type="number"
               step="0.01"

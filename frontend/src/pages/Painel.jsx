@@ -55,7 +55,7 @@ export default function Painel({ usuario }) {
         <div style={styles.card}>
           <div style={styles.cardHeader}>
             <span style={styles.cardTitle}>Saldo Total</span>
-            <DollarSign size={22} color="var(--primary)" />
+            <DollarSign size={22} color={saldoTotal >= 0 ? '#10b981' : '#ef4444'} />
           </div>
           <p style={{ ...styles.cardValue, color: saldoTotal >= 0 ? '#10b981' : '#ef4444' }}>
             R$ {saldoTotal.toFixed(2)}

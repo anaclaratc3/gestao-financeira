@@ -69,3 +69,17 @@ select option {
   background-color: var(--bg-card);
   color: var(--text-primary);
 }
+
+/* Efeito de Hover no Botão da Marca/Sidebar */
+button:hover {
+  opacity: 0.95;
+}
+
+/* Efeito específico no cabeçalho da sidebar ao passar o mouse */
+button[title*="menu"]:hover {
+  background-color: var(--border-color) !important;
+}
+
+button[title*="menu"]:hover div {
+  transform: scale(1.1);
+}

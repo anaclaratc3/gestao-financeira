@@ -17,6 +17,10 @@ CREATE TABLE IF NOT EXISTS categorias (
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 );
 
+-- 2.1 Ajuste Tabela Categorias
+ALTER TABLE categorias 
+ADD COLUMN IF NOT EXISTS limite_mensal NUMERIC(10, 2) DEFAULT NULL;
+
 -- 3. Tabela de Transações
 CREATE TABLE IF NOT EXISTS transacoes (
     id SERIAL PRIMARY KEY,

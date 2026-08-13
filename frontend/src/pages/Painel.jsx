@@ -2,118 +2,152 @@ import { useState, useEffect } from 'react';
 import { ArrowUpCircle, ArrowDownCircle, DollarSign } from 'lucide-react';
 import api from '../services/api';
 
-export default function Painel({ usuario }) {
+export default function Painel() {
   const [transacoes, setTransacoes] = useState([]);
+  const [entradas, setEntradas] = useState(0);
+  const [saidas, setSaidas] = useState(0);
+  const [saldo, setSaldo] = useState(0);
 
   useEffect(() => {
-    api.get('/transacoes')
-      .then((res) => setTransacoes(res.data))
-      .catch((err) => console.error('Erro ao carregar resumo:', err));
+    carregarResumo();
   }, []);
 
-  const totalEntradas = transacoes
-    .filter((t) => t.tipo === 'receita')
-    .reduce((acc, t) => acc + Number(t.valor), 0);
+  const carregarResumo = async () => {
+    try {
+      const response = await api.get('/transacoes');
+      const dados = response.data;
+      setTransacoes(dados);
 
-  const totalSaidas = transacoes
-    .filter((t) => t.tipo === 'despesa')
-    .reduce((acc, t) => acc + Number(t.valor), 0);
+      let totalEntradas = 0;
+      let totalSaidas = 0;
 
-  const saldoTotal = totalEntradas - totalSaidas;
+      dados.forEach((t) => {
+        const valorNum = parseFloat(t.valor) || 0;
+        if (t.tipo === 'ENTRADA') {
+          totalEntradas += valorNum;
+        } else if (t.tipo === 'SAIDA') {
+          totalSaidas += valorNum;
+        }
+      });
+
+      setEntradas(totalEntradas);
+      setSaidas(totalSaidas);
+      setSaldo(totalEntradas - totalSaidas);
+    } catch (error) {
+      console.error('Erro ao carregar dados do painel:', error);
+    }
+  };
+
+  const formatarData = (dataString) => {
+    if (!dataString) return '-';
+    try {
+      // Trata strings do Postgres (AAAA-MM-DD ou ISO) sem erro de fuso horário
+      const partes = dataString.split('T')[0].split('-');
+      if (partes.length === 3) {
+        return `${partes[2]}/${partes[1]}/${partes[0]}`;
+      }
+      return new Date(dataString).toLocaleDateString('pt-BR');
+    } catch (e) {
+      return '-';
+    }
+  };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div style={styles.container}>
       <div>
-        <h2 style={{ margin: 0, fontSize: '1.4rem' }}>Olá, {usuario.nome}</h2>
+        <h2 style={styles.pageTitle}>Olá, Ana</h2>
         <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
           Visão geral das suas finanças
         </span>
       </div>
 
       {/* CARDS DE RESUMO */}
-      <section style={styles.cardsGrid}>
-        <div style={styles.card}>
-          <div style={styles.cardHeader}>
-            <span style={styles.cardTitle}>Entradas</span>
-            <ArrowUpCircle size={22} color="#10b981" />
+      <div style={styles.gridCards}>
+        <div style={styles.cardResumo}>
+          <div>
+            <span style={styles.cardLabel}>Entradas</span>
+            <h3 style={{ ...styles.cardValor, color: '#22c55e' }}>
+              R$ {entradas.toFixed(2)}
+            </h3>
           </div>
-          <p style={{ ...styles.cardValue, color: '#10b981' }}>
-            R$ {totalEntradas.toFixed(2)}
-          </p>
+          <ArrowUpCircle size={28} color="#22c55e" />
         </div>
 
-        <div style={styles.card}>
-          <div style={styles.cardHeader}>
-            <span style={styles.cardTitle}>Saídas</span>
-            <ArrowDownCircle size={22} color="#ef4444" />
+        <div style={styles.cardResumo}>
+          <div>
+            <span style={styles.cardLabel}>Saídas</span>
+            <h3 style={{ ...styles.cardValor, color: '#ef4444' }}>
+              R$ {saidas.toFixed(2)}
+            </h3>
           </div>
-          <p style={{ ...styles.cardValue, color: '#ef4444' }}>
-            R$ {totalSaidas.toFixed(2)}
-          </p>
+          <ArrowDownCircle size={28} color="#ef4444" />
         </div>
 
-        <div style={styles.card}>
-          <div style={styles.cardHeader}>
-            <span style={styles.cardTitle}>Saldo Total</span>
-            <DollarSign size={22} color={saldoTotal >= 0 ? '#10b981' : '#ef4444'} />
+        <div style={styles.cardResumo}>
+          <div>
+            <span style={styles.cardLabel}>Saldo Total</span>
+            <h3 style={{ ...styles.cardValor, color: saldo >= 0 ? '#22c55e' : '#ef4444' }}>
+              R$ {saldo.toFixed(2)}
+            </h3>
           </div>
-          <p style={{ ...styles.cardValue, color: saldoTotal >= 0 ? '#10b981' : '#ef4444' }}>
-            R$ {saldoTotal.toFixed(2)}
-          </p>
+          <DollarSign size={28} color="#22c55e" />
         </div>
-      </section>
+      </div>
 
-      {/* ÚLTIMAS TRANSAÇÕES */}
-      <section style={styles.sectionCard}>
-        <h3 style={{ marginTop: 0, fontSize: '1.1rem', marginBottom: '1rem' }}>Últimas Movimentações</h3>
+      {/* ÚLTIMAS MOVIMENTAÇÕES */}
+      <section style={styles.card}>
+        <h3 style={styles.sectionTitle}>Últimas Movimentações</h3>
         {transacoes.length === 0 ? (
-          <p style={{ textAlign: 'center', color: 'var(--text-secondary)', margin: '1.5rem 0' }}>
-            Nenhuma movimentação registrada.
+          <p style={{ textAlign: 'center', color: 'var(--text-secondary)', margin: '2rem 0' }}>
+            Nenhuma movimentação cadastrada.
           </p>
         ) : (
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th style={styles.th}>Descrição</th>
-                <th style={styles.th}>Tipo</th>
-                <th style={styles.th}>Valor</th>
-                <th style={styles.th}>Data</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transacoes.slice(0, 5).map((t) => (
-                <tr key={t.id} style={styles.tr}>
-                  <td style={styles.td}>{t.descricao}</td>
-                  <td style={styles.td}>
-                    <span
+          <div style={styles.tabelaWrapper}>
+            <table style={styles.tabela}>
+              <thead>
+                <tr>
+                  <th style={styles.th}>Descrição</th>
+                  <th style={styles.th}>Tipo</th>
+                  <th style={styles.th}>Valor</th>
+                  <th style={styles.th}>Data</th>
+                </tr>
+              </thead>
+              <tbody>
+                {transacoes.slice(0, 5).map((t) => (
+                  <tr key={t.id} style={styles.tr}>
+                    <td style={styles.td}>
+                      <strong>{t.descricao}</strong>
+                    </td>
+                    <td style={styles.td}>
+                      <span
+                        style={{
+                          padding: '0.2rem 0.5rem',
+                          borderRadius: '4px',
+                          fontSize: '0.75rem',
+                          fontWeight: 'bold',
+                          backgroundColor: t.tipo === 'ENTRADA' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                          color: t.tipo === 'ENTRADA' ? '#22c55e' : '#ef4444',
+                        }}
+                      >
+                        {t.tipo === 'ENTRADA' ? 'Entrada' : 'Saída'}
+                      </span>
+                    </td>
+                    <td
                       style={{
-                        padding: '0.2rem 0.6rem',
-                        borderRadius: '4px',
-                        fontSize: '0.75rem',
+                        ...styles.td,
                         fontWeight: 'bold',
-                        backgroundColor: t.tipo === 'receita' ? '#10b98120' : '#ef444420',
-                        color: t.tipo === 'receita' ? '#10b981' : '#ef4444',
+                        color: t.tipo === 'ENTRADA' ? '#22c55e' : '#ef4444',
                       }}
                     >
-                      {t.tipo === 'receita' ? 'Entrada' : 'Saída'}
-                    </span>
-                  </td>
-                  <td
-                    style={{
-                      ...styles.td,
-                      fontWeight: 'bold',
-                      color: t.tipo === 'receita' ? '#10b981' : '#ef4444',
-                    }}
-                  >
-                    {t.tipo === 'receita' ? '+' : '-'} R$ {Number(t.valor).toFixed(2)}
-                  </td>
-                  <td style={styles.td}>
-                    {new Date(t.data_transacao).toLocaleDateString('pt-BR')}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                      {t.tipo === 'ENTRADA' ? '+ ' : '- '}
+                      R$ {Number(t.valor).toFixed(2)}
+                    </td>
+                    <td style={styles.td}>{formatarData(t.data)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
     </div>
@@ -121,53 +155,17 @@ export default function Painel({ usuario }) {
 }
 
 const styles = {
-  cardsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-    gap: '1rem',
-  },
-  card: {
-    backgroundColor: 'var(--bg-card)',
-    border: '1px solid var(--border-color)',
-    borderRadius: '10px',
-    padding: '1.25rem',
-  },
-  cardHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  cardTitle: {
-    fontSize: '0.85rem',
-    color: 'var(--text-secondary)',
-  },
-  cardValue: {
-    fontSize: '1.6rem',
-    fontWeight: 'bold',
-    margin: '0.5rem 0 0 0',
-  },
-  sectionCard: {
-    backgroundColor: 'var(--bg-card)',
-    border: '1px solid var(--border-color)',
-    borderRadius: '10px',
-    padding: '1.5rem',
-  },
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse',
-    textAlign: 'left',
-    fontSize: '0.9rem',
-  },
-  th: {
-    padding: '0.75rem 0.5rem',
-    color: 'var(--text-secondary)',
-    fontWeight: '600',
-    borderBottom: '2px solid var(--border-color)',
-  },
-  tr: {
-    borderBottom: '1px solid var(--border-color)',
-  },
-  td: {
-    padding: '0.75rem 0.5rem',
-  },
+  container: { display: 'flex', flexDirection: 'column', gap: '1.5rem' },
+  pageTitle: { margin: 0, fontSize: '1.4rem' },
+  gridCards: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' },
+  cardResumo: { backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+  cardLabel: { fontSize: '0.8rem', color: 'var(--text-secondary)' },
+  cardValor: { margin: '0.3rem 0 0 0', fontSize: '1.4rem' },
+  card: { backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '1.5rem' },
+  sectionTitle: { marginTop: 0, marginBottom: '1rem', fontSize: '1.1rem' },
+  tabelaWrapper: { overflowX: 'auto' },
+  tabela: { width: '100%', borderCollapse: 'collapse', textAlign: 'left' },
+  th: { padding: '0.75rem', borderBottom: '1px solid var(--border-color)', fontSize: '0.85rem', color: 'var(--text-secondary)' },
+  tr: { borderBottom: '1px solid var(--border-color)' },
+  td: { padding: '0.75rem', fontSize: '0.9rem' },
 };
